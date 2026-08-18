@@ -29,6 +29,7 @@ Inverse PINN: 1) $\sigma$ accuracy (see part 1) 2) balancing several losses by c
 #### Questions:
 1. Could you please summarized the real data setting, such as the knowns and unknowns? 
 2. Real data paper PINN, how did they train? Can they use different training samples at each epoch?
+3. Strike Price K: is it a pre-known constant or is it a trainable parameter?
 
 
 # Part 3: Future Directions:
