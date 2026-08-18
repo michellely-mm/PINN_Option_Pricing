@@ -14,12 +14,22 @@ You also mentioned that we cannot simultaneously have good $r$ and $\sigma$. Can
 
 # Part 2: Is it enough to write a paper?
 
+#### What we have
 We have three models: inversePINN, paper PINN, and forward PINN, and three datasets: synthetic European call, synthetic American call, and real data.
 
+#### Inverse PINN difficulties
 Inverse PINN: 1) $\sigma$ accuracy (see part 1) 2) balancing several losses by choosing $\lambda$.
 
-Contributions: 1) we have real data, and it outperforms paper PINN and forward PINN. 2) we propose new training strategies (learning rate and alternating training) to improve accuracy. 3) We introduce self-adaptive $\lambda$ (now it is manual selection). 4) We can verify (both theory and numerics) whether $r$ and $\sigma$ are identifiable.
+#### Contributions: 
+1. We have real data, and it outperforms paper PINN and forward PINN.
+2. We propose new training strategies (learning rate and alternating training) to improve accuracy.       ------ Need to be done.
+3. We introduce self-adaptive $\lambda$ (now it is manual selection).                                     ------ Need to be done.
+4. We can verify (both theory and numerics) whether $r$ and $\sigma$ are identifiable.                    ------ Need to be done. I will check how to do it in theory.
 
-Q:
+#### Questions:
 1. Real data paper PINN, how did they train? Ca they use different training samples at each epoch?
 
+
+# Part 3: Future Directions:
+1. Comparison between joint optimization and forward-inverse separate optimization.
+2. Operator Learning.
