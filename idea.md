@@ -1,7 +1,7 @@
 # Part 1: Improving Performance
 
 ### Identify why $\sigma$ is hard to train.
-1. Visualize $|V_{SS}|$ over uniform grid (test points). Since the gradient of $\sigma$ depends on $V_{SS}$, the estimation is not accurate if the error is large.
+1. Visualize $|PINN_{SS} - V_{SS}|$ over uniform grid (test points). Since the gradient of $\sigma$ depends on $V_{SS}$, the estimation is not accurate if the error is large.
 2. After training, print sigma.item(), sigma.grad.item(), and r.grad.item().
 
 ### Modify training process to get better result
