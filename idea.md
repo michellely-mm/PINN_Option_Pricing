@@ -27,7 +27,8 @@ Inverse PINN: 1) $\sigma$ accuracy (see part 1) 2) balancing several losses by c
 4. We can verify (both theory and numerics) whether $r$ and $\sigma$ are identifiable.                    ------ Need to be done. I will check how to do it in theory.
 
 #### Questions:
-1. Real data paper PINN, how did they train? Ca they use different training samples at each epoch?
+1. Could you please summarized the real data setting, such as the knowns and unknowns? 
+2. Real data paper PINN, how did they train? Can they use different training samples at each epoch?
 
 
 # Part 3: Future Directions:
