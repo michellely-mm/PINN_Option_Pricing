@@ -5,7 +5,7 @@
 2. After training, print sigma.item(), sigma.grad.item(), and r.grad.item().
 
 ### Modify training process to get better result
-1. Change learning rate for $、sigma$. Try larger learning rate first. If it does not work, try small learning rate.
+1. Change learning rate for $\sigma$. Try larger learning rate first. If it does not work, try small learning rate.
 2. New training strategy. Alternative training process: fix $(r,\sigma)$ train NN, then fix NN weights and train $r,\sigma$.
 
 You also mentioned that we cannot simultaneously have good $r$ and $\sigma$. Can we explain why?
@@ -33,3 +33,4 @@ Inverse PINN: 1) $\sigma$ accuracy (see part 1) 2) balancing several losses by c
 # Part 3: Future Directions:
 1. Comparison between joint optimization and forward-inverse separate optimization.
 2. Operator Learning.
+3. Inverse problem, but $r$ and $sigma$ are functions rather than constants.
