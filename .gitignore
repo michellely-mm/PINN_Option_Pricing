@@ -1,0 +1,6 @@
+pinn_option_pricing/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+Icon
+Icon*
