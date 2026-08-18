@@ -7,6 +7,7 @@
 ### Modify training process to get better result
 1. Change learning rate for $\sigma$. Try larger learning rate first. If it does not work, try small learning rate.
 2. New training strategy. Alternative training process: fix $(r,\sigma)$ train NN, then fix NN weights and train $r,\sigma$.
+3. Regarding the $\sigma$ accuracy, another thing we should try is adding data loss into the loss function.
 
 You also mentioned that we cannot simultaneously have good $r$ and $\sigma$. Can we explain why?
 
