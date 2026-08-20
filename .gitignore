@@ -1,6 +1,15 @@
+# Ignore everything
+*
+
+# Allow directories so Git can search inside
+!*/
+
+# Only track Python and Jupyter files
+!*.py
+!*.ipynb
+
+# Keep .gitignore
+!.gitignore
+
+# Ignore nested project
 pinn_option_pricing/
-__pycache__/
-.ipynb_checkpoints/
-.DS_Store
-Icon
-Icon*
