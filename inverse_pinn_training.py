@@ -49,16 +49,35 @@ lambda_terminal = 1.0
 lambda_boundary = 1.0
 
 # 5. load synthetic observation
-def load_synthetic_data():
+def load_synthetic_data(data_path=None):
+    """
+    Load the (t, S, V) synthetic observations used for training.
+
+    Parameters
+    ----------
+    data_path : str, Path, or None
+        - None (default): use the original
+          data/synthetic_european_call_data_2000.csv file, unchanged
+          behaviour for notebooks 02/04/05.
+        - relative path: resolved relative to this .py file's directory
+          (e.g. "data/synthetic_european_call_data_augmented.csv").
+        - absolute path: used as-is.
+    """
 
     # Locate the data folder relative to this .py file
     module_directory = Path(__file__).parent
 
-    data_path = (
-        module_directory
-        / "data"
-        / "synthetic_european_call_data_2000.csv"
-    )
+    if data_path is None:
+        data_path = (
+            module_directory
+            / "data"
+            / "synthetic_european_call_data_2000.csv"
+        )
+    else:
+        data_path = Path(data_path)
+
+        if not data_path.is_absolute():
+            data_path = module_directory / data_path
 
     synthetic_df = pd.read_csv(
         data_path
@@ -368,13 +387,16 @@ def train_one_run(
     run_number=None,
     print_every=5000,
     return_model=False,
-    track_history=False
+    track_history=False,
+    data_path=None
 ):
 
     start_time = time.time()
 
     t_obs, S_obs, V_obs = (
-        load_synthetic_data()
+        load_synthetic_data(
+            data_path=data_path
+        )
     )
 
     N_obs = t_obs.shape[0]

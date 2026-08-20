@@ -1,0 +1,9 @@
+﻿Parameter,Our PINN,Paper forward
+PDE points,"2000, fixed","8000 / epoch, resampled"
+terminal,"500, fixed","8000 / epoch, resampled"
+boundary,"500 time points, fixed",8000 left + 8000 right / epoch
+epochs,30000,25000 reported in paper
+architecture,4×64 Tanh MLP,"gated/residual, width 128"
+learning rate,1e-3,1e-5
+PDE weight,1.5,52
+inverse price data,2000 fixed observations,none (forward problem)
