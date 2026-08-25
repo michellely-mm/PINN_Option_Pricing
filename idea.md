@@ -37,3 +37,7 @@ Inverse PINN: 1) $\sigma$ accuracy (see part 1) 2) balancing several losses by c
 1. Comparison between joint optimization and forward-inverse separate optimization.
 2. Operator Learning.
 3. Inverse problem, but $r$ and $\sigma$ are functions rather than constants.
+
+
+# Part 4: American Put
+We should discuss more on this. I realize that the paper did not do well in American Put. 
