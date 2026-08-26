@@ -9,11 +9,15 @@ import torch.nn as nn
 
 from inverse_pinn_model import InversePINN
 
+
 # 1. Numerical settings
+
 device = torch.device("cpu")
 dtype = torch.float64
 
+
 # 2. European call problem settings
+
 K = 40.0
 T = 1.0
 
@@ -26,7 +30,9 @@ S_max = 160.0
 r_true = 0.05
 sigma_true = 0.20
 
-# 3. PINN setting
+
+# 3. PINN settings
+
 N_f = 2000
 N_terminal = 500
 N_boundary = 500
@@ -39,7 +45,9 @@ hidden_layers = 4
 r_initial = 0.10
 sigma_initial = 0.40
 
-# 4. Training settings 
+
+# 4. Training settings
+
 learning_rate = 1e-3
 num_epochs = 30000
 
@@ -48,7 +56,9 @@ lambda_pde = 1.50
 lambda_terminal = 1.0
 lambda_boundary = 1.0
 
-# 5. load synthetic observation
+
+# 5. Load synthetic observations
+
 def load_synthetic_data(data_path=None):
     """
     Load the (t, S, V) synthetic observations used for training.
@@ -56,28 +66,36 @@ def load_synthetic_data(data_path=None):
     Parameters
     ----------
     data_path : str, Path, or None
-        - None (default): use the original
-          data/synthetic_european_call_data_2000.csv file, unchanged
-          behaviour for notebooks 02/04/05.
-        - relative path: resolved relative to this .py file's directory
-          (e.g. "data/synthetic_european_call_data_augmented.csv").
-        - absolute path: used as-is.
+        None:
+            Use data/synthetic_european_call_data_2000.csv.
+
+        Relative path:
+            Resolve relative to this Python file.
+
+        Absolute path:
+            Use directly.
     """
 
-    # Locate the data folder relative to this .py file
     module_directory = Path(__file__).parent
 
     if data_path is None:
+
         data_path = (
             module_directory
             / "data"
             / "synthetic_european_call_data_2000.csv"
         )
+
     else:
+
         data_path = Path(data_path)
 
         if not data_path.is_absolute():
-            data_path = module_directory / data_path
+
+            data_path = (
+                module_directory
+                / data_path
+            )
 
     synthetic_df = pd.read_csv(
         data_path
@@ -107,41 +125,50 @@ def load_synthetic_data(data_path=None):
         V_obs
     )
 
-# 6. BS PDE residual
+
+# 6. Black-Scholes PDE residual
+
 def black_scholes_residual(
-        model: nn.Module,
-        t: torch.Tensor,
-        S: torch.Tensor
+    model: nn.Module,
+    t: torch.Tensor,
+    S: torch.Tensor
 ):
-    # make copies
+
     t_input = (
-        t.clone().detach().requires_grad_(True)
+        t.clone()
+        .detach()
+        .requires_grad_(True)
     )
+
     S_input = (
-        S.clone().detach().requires_grad_(True)
+        S.clone()
+        .detach()
+        .requires_grad_(True)
     )
 
-    u = model(t_input, S_input)
+    u = model(
+        t_input,
+        S_input
+    )
 
-    # first derivative with respect to time
     u_t = torch.autograd.grad(
-        outputs = u,
-        inputs = t_input,
+        outputs=u,
+        inputs=t_input,
         grad_outputs=torch.ones_like(u),
         create_graph=True,
         retain_graph=True
     )[0]
 
     u_S = torch.autograd.grad(
-        outputs = u,
-        inputs = S_input,
+        outputs=u,
+        inputs=S_input,
         grad_outputs=torch.ones_like(u),
         create_graph=True,
         retain_graph=True
     )[0]
 
     u_SS = torch.autograd.grad(
-        outputs = u_S,
+        outputs=u_S,
         inputs=S_input,
         grad_outputs=torch.ones_like(u_S),
         create_graph=True,
@@ -166,72 +193,109 @@ def black_scholes_residual(
         - r_est
         * u
     )
+
     return residual
 
+
 # 7. Loss function
+
 def compute_losses(
-        model,
-        t_train,
-        S_train,
-        u_train,
-        t_f,
-        S_f,
-        t_terminal,
-        S_terminal,
-        t_boundary,
-        S_boundary_left,
-        S_boundary_right
+    model,
+    t_train,
+    S_train,
+    u_train,
+    t_f,
+    S_f,
+    t_terminal,
+    S_terminal,
+    t_boundary,
+    S_boundary_left,
+    S_boundary_right
 ):
-    # data loss
+
+    # Data loss
+
     u_data_prediction = model(
         t_train,
         S_train
     )
+
     loss_data = torch.mean(
-        (u_data_prediction - u_train) ** 2
+        (
+            u_data_prediction
+            - u_train
+        ) ** 2
     )
 
+
     # PDE loss
-    pde_prediction = (
-        black_scholes_residual(model, t_f, S_f)
+
+    pde_prediction = black_scholes_residual(
+        model,
+        t_f,
+        S_f
     )
+
     pde_true = torch.zeros_like(
         pde_prediction
     )
+
     loss_pde = torch.mean(
-        (pde_true - pde_prediction) ** 2
+        (
+            pde_true
+            - pde_prediction
+        ) ** 2
     )
 
-    # terminal loss
+
+    # Terminal-condition loss
+
     u_terminal_prediction = model(
         t_terminal,
         S_terminal
     )
+
     u_terminal_true = (
-        torch.relu(S_terminal - K)/K 
+        torch.relu(
+            S_terminal - K
+        )
+        / K
     )
 
     loss_terminal = torch.mean(
-        (u_terminal_true - u_terminal_prediction) ** 2
+        (
+            u_terminal_true
+            - u_terminal_prediction
+        ) ** 2
     )
 
-    # left_boundary loss (v = 0)
+
+    # Left-boundary loss
+
     u_left_prediction = model(
         t_boundary,
         S_boundary_left
     )
+
     u_left_true = torch.zeros_like(
         u_left_prediction
     )
+
     loss_boundary_left = torch.mean(
-        (u_left_true - u_left_prediction) ** 2
+        (
+            u_left_true
+            - u_left_prediction
+        ) ** 2
     )
 
-    # right_boundary loss 
+
+    # Right-boundary loss
+
     u_right_prediction = model(
         t_boundary,
         S_boundary_right
     )
+
     u_right_true = (
         S_boundary_right
 
@@ -243,10 +307,18 @@ def compute_losses(
     ) / K
 
     loss_boundary_right = torch.mean(
-        (u_right_true - u_right_prediction) ** 2
+        (
+            u_right_true
+            - u_right_prediction
+        ) ** 2
     )
 
-    loss_boundary = (loss_boundary_left + loss_boundary_right)
+
+    loss_boundary = (
+        loss_boundary_left
+        + loss_boundary_right
+    )
+
 
     total_loss = (
         lambda_data
@@ -287,7 +359,6 @@ def black_scholes_call(
 
     eps = 1e-12
 
-
     tau_safe = torch.clamp(
         tau,
         min=eps
@@ -299,7 +370,6 @@ def black_scholes_call(
     )
 
 
-    # d1
     d1 = (
         torch.log(
             S_safe / K
@@ -319,7 +389,6 @@ def black_scholes_call(
     )
 
 
-    # d2
     d2 = (
         d1
         - sigma
@@ -329,7 +398,6 @@ def black_scholes_call(
     )
 
 
-    # Standard normal CDF
     N_d1 = 0.5 * (
         1.0
         + torch.erf(
@@ -345,7 +413,6 @@ def black_scholes_call(
     )
 
 
-    # Black-Scholes price
     V = (
         S_safe
         * N_d1
@@ -358,10 +425,10 @@ def black_scholes_call(
     )
 
 
-    # Exact terminal condition
     payoff = torch.relu(
         S - K
     )
+
 
     V = torch.where(
         tau <= eps,
@@ -370,7 +437,6 @@ def black_scholes_call(
     )
 
 
-    # Exact left boundary
     V = torch.where(
         S <= eps,
         torch.zeros_like(V),
@@ -388,10 +454,14 @@ def train_one_run(
     print_every=5000,
     return_model=False,
     track_history=False,
+    track_adam_updates=False,
     data_path=None
 ):
 
     start_time = time.time()
+
+
+    # Load observations
 
     t_obs, S_obs, V_obs = (
         load_synthetic_data(
@@ -402,19 +472,21 @@ def train_one_run(
     N_obs = t_obs.shape[0]
 
 
-    # Use ALL observations for training
+    # Use all observations for training
+
     t_train = t_obs
     S_train = S_obs
     V_train = V_obs
 
 
-    # Normalize option prices:
-    # u(t,S) = V(t,S) / K
+    # Normalize option prices
+
     u_train = (
         V_train / K
     )
 
-    # 2. Fresh neural-network initialization
+
+    # Create fresh model
 
     model = InversePINN(
         t_min=t_min,
@@ -430,7 +502,8 @@ def train_one_run(
         dtype=dtype
     )
 
-    # 3. Fresh PDE collocation points
+
+    # Generate PDE collocation points
 
     t_f = (
         t_min
@@ -466,7 +539,7 @@ def train_one_run(
     )
 
 
-    # 4. Fresh terminal-condition points
+    # Generate terminal-condition points
 
     t_terminal = torch.full(
         (N_terminal, 1),
@@ -490,7 +563,7 @@ def train_one_run(
     )
 
 
-    # 5. Fresh boundary-condition points
+    # Generate boundary-condition points
 
     t_boundary = (
         t_min
@@ -522,14 +595,15 @@ def train_one_run(
     )
 
 
-    # 6. Optimizer
+    # Create optimizer
+
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate
     )
 
 
-    # 7. Optional training history
+    # Optional regular training history
 
     history = None
 
@@ -547,12 +621,29 @@ def train_one_run(
         }
 
 
-    
-    # 8. Training
+    # Optional gradient and Adam-update history
+
+    adam_update_history = None
+
+    if track_adam_updates:
+
+        adam_update_history = {
+            "epoch": [],
+            "r_raw_grad": [],
+            "sigma_raw_grad": [],
+            "r_raw_update": [],
+            "sigma_raw_update": [],
+            "r_update": [],
+            "sigma_update": []
+        }
+
+
+    # Print starting information
 
     if run_number is not None:
 
         print()
+
         print(
             f"Starting Run {run_number}"
         )
@@ -561,6 +652,8 @@ def train_one_run(
             f"Training observations: {N_obs}"
         )
 
+
+    # Training loop
 
     for epoch in range(
         1,
@@ -594,46 +687,183 @@ def train_one_run(
 
 
         # Backpropagation
+
         losses["total"].backward()
 
 
-        # Update NN weights, r_raw, and sigma_raw
+        # Record gradients and parameter values before Adam step
+
+        if track_adam_updates:
+
+            r_raw_grad = (
+                model.r_raw.grad.item()
+            )
+
+            sigma_raw_grad = (
+                model.sigma_raw.grad.item()
+            )
+
+            r_raw_before = (
+                model.r_raw
+                .detach()
+                .item()
+            )
+
+            sigma_raw_before = (
+                model.sigma_raw
+                .detach()
+                .item()
+            )
+
+            r_before = (
+                model.r
+                .detach()
+                .item()
+            )
+
+            sigma_before = (
+                model.sigma
+                .detach()
+                .item()
+            )
+
+
+        # Update neural-network weights, r_raw, and sigma_raw
+
         optimizer.step()
 
 
-        # Save history 
+        # Record actual Adam updates
 
-        if track_history:
+        if track_adam_updates:
 
-            history["epoch"].append(
+            r_raw_after = (
+                model.r_raw
+                .detach()
+                .item()
+            )
+
+            sigma_raw_after = (
+                model.sigma_raw
+                .detach()
+                .item()
+            )
+
+            r_after = (
+                model.r
+                .detach()
+                .item()
+            )
+
+            sigma_after = (
+                model.sigma
+                .detach()
+                .item()
+            )
+
+
+            adam_update_history[
+                "epoch"
+            ].append(
                 epoch
             )
 
-            history["total_loss"].append(
+
+            adam_update_history[
+                "r_raw_grad"
+            ].append(
+                r_raw_grad
+            )
+
+
+            adam_update_history[
+                "sigma_raw_grad"
+            ].append(
+                sigma_raw_grad
+            )
+
+
+            adam_update_history[
+                "r_raw_update"
+            ].append(
+                r_raw_after
+                - r_raw_before
+            )
+
+
+            adam_update_history[
+                "sigma_raw_update"
+            ].append(
+                sigma_raw_after
+                - sigma_raw_before
+            )
+
+
+            adam_update_history[
+                "r_update"
+            ].append(
+                r_after
+                - r_before
+            )
+
+
+            adam_update_history[
+                "sigma_update"
+            ].append(
+                sigma_after
+                - sigma_before
+            )
+
+
+        # Save regular training history
+
+        if track_history:
+
+            history[
+                "epoch"
+            ].append(
+                epoch
+            )
+
+            history[
+                "total_loss"
+            ].append(
                 losses["total"].item()
             )
 
-            history["data_loss"].append(
+            history[
+                "data_loss"
+            ].append(
                 losses["data"].item()
             )
 
-            history["pde_loss"].append(
+            history[
+                "pde_loss"
+            ].append(
                 losses["pde"].item()
             )
 
-            history["terminal_loss"].append(
+            history[
+                "terminal_loss"
+            ].append(
                 losses["terminal"].item()
             )
 
-            history["boundary_loss"].append(
+            history[
+                "boundary_loss"
+            ].append(
                 losses["boundary"].item()
             )
 
-            history["r_estimate"].append(
+            history[
+                "r_estimate"
+            ].append(
                 model.r.item()
             )
 
-            history["sigma_estimate"].append(
+            history[
+                "sigma_estimate"
+            ].append(
                 model.sigma.item()
             )
 
@@ -657,7 +887,7 @@ def train_one_run(
             )
 
 
-    # 9. Final parameter estimates
+    # Final parameter estimates
 
     r_estimated = (
         model.r.item()
@@ -667,7 +897,8 @@ def train_one_run(
         model.sigma.item()
     )
 
-    # 10. Parameter-estimation errors
+
+    # Parameter-estimation errors
 
     r_absolute_error = abs(
         r_estimated
@@ -694,8 +925,7 @@ def train_one_run(
     )
 
 
-    # 11. Build fixed 100 x 100 PDE test mesh
-    # It is only used for post-training testing.
+    # Build fixed 100 x 100 PDE test mesh
 
     N_test = 100
 
@@ -732,19 +962,20 @@ def train_one_run(
         .reshape(-1, 1)
     )
 
+
     S_test = (
         S_test_mesh
         .reshape(-1, 1)
     )
 
-    # 12. True PDE solution and PINN prediction
+
+    # Evaluate analytical solution and PINN prediction
 
     model.eval()
 
 
     with torch.no_grad():
 
-        # True analytical Black-Scholes solution
         V_true = black_scholes_call(
             t=t_test,
             S=S_test,
@@ -755,20 +986,19 @@ def train_one_run(
         )
 
 
-        # PINN normalized prediction
         u_pinn = model(
             t_test,
             S_test
         )
 
 
-        # Convert u = V/K back to option price
         V_pinn = (
-            K * u_pinn
+            K
+            * u_pinn
         )
 
 
-    # 13. PDE test MSE
+    # PDE test MSE
 
     pde_test_mse = torch.mean(
         (
@@ -778,7 +1008,7 @@ def train_one_run(
     ).item()
 
 
-    # 14. PDE test correlation
+    # PDE test correlation
 
     V_true_np = (
         V_true
@@ -802,58 +1032,68 @@ def train_one_run(
     )[0, 1]
 
 
-    # 15. Runtime
+    # Runtime
+
     runtime_minutes = (
         time.time()
         - start_time
     ) / 60.0
 
 
-    # 16. Report final results
+    # Print final results
+
     print()
+
     print(
         f"Run {run_number} completed"
         if run_number is not None
         else "Training completed"
     )
 
+
     print(
         f"Estimated r:           "
         f"{r_estimated:.8f}"
     )
+
 
     print(
         f"Estimated sigma:       "
         f"{sigma_estimated:.8f}"
     )
 
+
     print(
         f"r relative error:      "
         f"{r_error_percent:.4f}%"
     )
+
 
     print(
         f"sigma relative error:  "
         f"{sigma_error_percent:.4f}%"
     )
 
+
     print(
         f"PDE test MSE:          "
         f"{pde_test_mse:.8f}"
     )
+
 
     print(
         f"PDE test correlation:  "
         f"{pde_test_correlation:.8f}"
     )
 
+
     print(
         f"Runtime:               "
         f"{runtime_minutes:.2f} minutes"
     )
 
-    
-    # 17. Results dictionary
+
+    # Results dictionary
 
     result = {
 
@@ -883,14 +1123,55 @@ def train_one_run(
     }
 
 
-    # 18. Return requested outputs
+    # Return requested outputs
 
-    if return_model and track_history:
+    if (
+        return_model
+        and track_history
+        and track_adam_updates
+    ):
+
+        return (
+            result,
+            model,
+            history,
+            adam_update_history
+        )
+
+
+    elif (
+        return_model
+        and track_history
+    ):
 
         return (
             result,
             model,
             history
+        )
+
+
+    elif (
+        return_model
+        and track_adam_updates
+    ):
+
+        return (
+            result,
+            model,
+            adam_update_history
+        )
+
+
+    elif (
+        track_history
+        and track_adam_updates
+    ):
+
+        return (
+            result,
+            history,
+            adam_update_history
         )
 
 
@@ -907,6 +1188,14 @@ def train_one_run(
         return (
             result,
             history
+        )
+
+
+    elif track_adam_updates:
+
+        return (
+            result,
+            adam_update_history
         )
 
 
