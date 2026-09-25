@@ -59,65 +59,281 @@ lambda_boundary = 1.0
 
 # 5. Load synthetic observations
 
-def load_synthetic_data(data_path=None):
+
+
+def load_synthetic_data(csv_path=None):
     """
-    Load the (t, S, V) synthetic observations used for training.
+    Load the fixed synthetic European-call observations from CSV.
 
-    Parameters
-    ----------
-    data_path : str, Path, or None
-        None:
-            Use data/synthetic_european_call_data_2000.csv.
+    The synthetic observations are NOT regenerated here.
 
-        Relative path:
-            Resolve relative to this Python file.
+    Expected CSV:
+        synthetic_european_call_data_2000.csv
 
-        Absolute path:
-            Use directly.
+    Expected columns:
+        t, S, V
+
+    The CSV is located automatically so the code does not
+    depend on an absolute local machine path.
     """
 
-    module_directory = Path(__file__).parent
+    from pathlib import Path
+    import pandas as pd
+    import torch
 
-    if data_path is None:
 
-        data_path = (
-            module_directory
-            / "data"
-            / "synthetic_european_call_data_2000.csv"
+    filename = (
+        "synthetic_european_call_data_2000.csv"
+    )
+
+
+    if csv_path is not None:
+
+        csv_path = (
+            Path(
+                csv_path
+            )
+            .expanduser()
+            .resolve()
         )
+
+        if not csv_path.is_file():
+
+            raise FileNotFoundError(
+                f"CSV file does not exist: {csv_path}"
+            )
+
 
     else:
 
-        data_path = Path(data_path)
+        module_dir = (
+            Path(__file__)
+            .resolve()
+            .parent
+        )
 
-        if not data_path.is_absolute():
+        working_dir = (
+            Path.cwd()
+            .resolve()
+        )
 
-            data_path = (
-                module_directory
-                / data_path
+
+        candidates = [
+
+            module_dir
+            / filename,
+
+            module_dir
+            / "data"
+            / filename,
+
+            working_dir
+            / filename,
+
+            working_dir
+            / "data"
+            / filename,
+
+            module_dir
+            .parent
+            / filename,
+
+            module_dir
+            .parent
+            / "data"
+            / filename,
+        ]
+
+
+        csv_path = None
+
+
+        for candidate in candidates:
+
+            if candidate.is_file():
+
+                csv_path = (
+                    candidate
+                    .resolve()
+                )
+
+                break
+
+
+        if csv_path is None:
+
+            search_roots = [
+                module_dir,
+                working_dir
+            ]
+
+
+            seen = set()
+
+
+            for root in search_roots:
+
+                root = root.resolve()
+
+                if root in seen:
+                    continue
+
+                seen.add(
+                    root
+                )
+
+
+                try:
+
+                    matches = list(
+                        root.rglob(
+                            filename
+                        )
+                    )
+
+                except Exception:
+
+                    matches = []
+
+
+                if matches:
+
+                    csv_path = (
+                        matches[0]
+                        .resolve()
+                    )
+
+                    break
+
+
+        if csv_path is None:
+
+            raise FileNotFoundError(
+                "\nCould not find "
+                "synthetic_european_call_data_2000.csv.\n"
+                "Make sure the CSV is included somewhere "
+                "inside the downloaded project folder.\n"
             )
 
+
     synthetic_df = pd.read_csv(
-        data_path
+        csv_path
     )
 
+
+    required_columns = {
+        "t",
+        "S",
+        "V"
+    }
+
+
+    missing_columns = (
+        required_columns
+        -
+        set(
+            synthetic_df.columns
+        )
+    )
+
+
+    if missing_columns:
+
+        raise ValueError(
+            "Synthetic CSV is missing required columns: "
+            f"{sorted(missing_columns)}"
+        )
+
+
     t_obs = torch.tensor(
-        synthetic_df["t"].to_numpy(),
+        synthetic_df[
+            "t"
+        ].to_numpy(),
         dtype=dtype,
         device=device
-    ).reshape(-1, 1)
+    ).reshape(
+        -1,
+        1
+    )
+
 
     S_obs = torch.tensor(
-        synthetic_df["S"].to_numpy(),
+        synthetic_df[
+            "S"
+        ].to_numpy(),
         dtype=dtype,
         device=device
-    ).reshape(-1, 1)
+    ).reshape(
+        -1,
+        1
+    )
+
 
     V_obs = torch.tensor(
-        synthetic_df["V"].to_numpy(),
+        synthetic_df[
+            "V"
+        ].to_numpy(),
         dtype=dtype,
         device=device
-    ).reshape(-1, 1)
+    ).reshape(
+        -1,
+        1
+    )
+
+
+    if not torch.isfinite(
+        t_obs
+    ).all():
+
+        raise ValueError(
+            "Non-finite values found in t."
+        )
+
+
+    if not torch.isfinite(
+        S_obs
+    ).all():
+
+        raise ValueError(
+            "Non-finite values found in S."
+        )
+
+
+    if not torch.isfinite(
+        V_obs
+    ).all():
+
+        raise ValueError(
+            "Non-finite values found in V."
+        )
+
+
+    print()
+    print(
+        "=" * 60
+    )
+
+    print(
+        "Loaded fixed synthetic observations from:"
+    )
+
+    print(
+        csv_path
+    )
+
+    print(
+        "Number of observations:",
+        len(
+            synthetic_df
+        )
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print()
+
 
     return (
         t_obs,
@@ -125,8 +341,6 @@ def load_synthetic_data(data_path=None):
         V_obs
     )
 
-
-# 6. Black-Scholes PDE residual
 
 def black_scholes_residual(
     model: nn.Module,
