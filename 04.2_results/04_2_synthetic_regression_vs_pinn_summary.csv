@@ -1,0 +1,2 @@
+method,runs,N_training_observations,PDE_collocation,r_estimate,r_std,sigma_estimate,sigma_std,r_error_percent,sigma_error_percent,test_mse_main,test_rmse_main,test_mae_main,test_correlation_main,test_r2_main,runtime_minutes_mean
+Regression,1,2000,N/A,0.05000000440000026,0.0,0.20000001300304307,0.0,8.800000519948448e-06,6.50152152947836e-06,9.907749025733099e-15,9.95376764131708e-08,7.612425354814871e-08,1.0,1.0,8.115371068318685e-05

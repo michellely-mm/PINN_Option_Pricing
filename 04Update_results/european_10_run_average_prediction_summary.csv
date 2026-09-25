@@ -1,0 +1,2 @@
+N_runs,r_estimate_mean,r_estimate_std,sigma_estimate_mean,sigma_estimate_std,r_error_percent_mean,r_error_percent_std,sigma_error_percent_mean,sigma_error_percent_std,pde_mse_average_prediction,pde_correlation_average_prediction
+10,0.050591577061353664,0.00018188448098267502,0.17718011443200177,0.005787422625590567,1.1831541227073914,0.3637689619653294,11.409942783999108,2.8937113127952907,0.0023193311155008394,0.9999993999962236
